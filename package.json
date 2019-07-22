@@ -1,0 +1,26 @@
+{
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "description": "discord.js wrapper to facilitate the coding of Discord bots",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jesuscc1993/discord-bot"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@types/node": "^7.0.7",
+    "discord.js": "^11.4.2",
+    "rxjs": "^6.3.2",
+    "typescript": "^3.0.3"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "prettier": {
+    "printWidth": 120,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "all"
+  }
+}
