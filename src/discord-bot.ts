@@ -1,13 +1,4 @@
-import Discord, {
-  ActivityType,
-  Client,
-  Guild,
-  GuildMember,
-  Message,
-  MessageOptions,
-  PermissionResolvable,
-  StringResolvable,
-} from 'discord.js';
+import Discord, { ActivityType, Client, Guild, GuildMember, Message, MessageOptions, StringResolvable } from 'discord.js';
 import { noop } from 'rxjs';
 
 import { execute, getParametersFromLine, lineContainsPrefix, messageContainsPrefix } from './discord-bot.domain';
@@ -48,7 +39,11 @@ export class DiscordBot {
       });
 
       if (guildIdentifications.length) {
-        this.log(`Currently running on the following ${guildIdentifications.length} server(s):\n  ${guildIdentifications.sort().join('\n  ')}`);
+        this.log(
+          `Currently running on the following ${
+            guildIdentifications.length
+          } server(s):\n  ${guildIdentifications.sort().join('\n  ')}`,
+        );
       }
     });
 
@@ -65,13 +60,20 @@ export class DiscordBot {
     });
 
     this.client.on('message', (message: Message) => {
-      if (messageContainsPrefix(message.content, this.botPrefix) || (this.botPrefixDefault && messageContainsPrefix(message.content, this.botPrefixDefault))) {
+      if (
+        messageContainsPrefix(message.content, this.botPrefix) ||
+        (this.botPrefixDefault && messageContainsPrefix(message.content, this.botPrefixDefault))
+      ) {
         message.content.split('\n').forEach(line => {
           if (lineContainsPrefix(line, `${this.botPrefix} `)) {
             const command: string = line.substring(this.botPrefix.length + 1).split(' ')[0];
             const parsedLine = line.substring(this.botPrefix.length + 1 + command.length);
             execute(this.botCommands[command], this, message, line, getParametersFromLine(parsedLine));
-          } else if (this.botCommands.default && this.botPrefixDefault && lineContainsPrefix(line, this.botPrefixDefault)) {
+          } else if (
+            this.botCommands.default &&
+            this.botPrefixDefault &&
+            lineContainsPrefix(line, this.botPrefixDefault)
+          ) {
             this.botCommands.default(this, message, line, getParametersFromLine(line));
           }
         });
@@ -98,7 +100,10 @@ export class DiscordBot {
         if (member.user.bot) botCount++;
       });
 
-      if (guild.members.size > this.minimumGuildMembersForFarmCheck && (botCount * 100) / guild.members.size >= this.maximumGuildBotsPercentage) {
+      if (
+        guild.members.size > this.minimumGuildMembersForFarmCheck &&
+        (botCount * 100) / guild.members.size >= this.maximumGuildBotsPercentage
+      ) {
         guild.leave().then(noop, this.onError('guild.leave'));
         this.log(`Server "${guild.name}" has been marked as potential bot farm`);
         return true;
@@ -146,7 +151,9 @@ export class DiscordBot {
       });
     } else {
       message.author.send(
-        `I don't have the permission to send messages on the server "${message.guild.name}". Please, contact the server admin to have this permission added.`,
+        `I don't have the permission to send messages on the server "${
+          message.guild.name
+        }". Please, contact the server admin to have this permission added.`,
       );
     }
   }
@@ -159,9 +166,5 @@ export class DiscordBot {
         color: 15158332,
       },
     });
-  }
-
-  public hasPermission({ permissions }: GuildMember, permission: PermissionResolvable, checkAdmin?: boolean) {
-    return permissions.has(permission, checkAdmin);
   }
 }
