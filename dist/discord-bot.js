@@ -38,14 +38,17 @@ var DiscordBot = /** @class */ (function () {
             discord_bot_domain_1.execute(_this.onGuildLeft, _this, guild);
         });
         this.client.on('message', function (message) {
-            if (discord_bot_domain_1.messageContainsPrefix(message.content, _this.botPrefix) || (_this.botPrefixDefault && discord_bot_domain_1.messageContainsPrefix(message.content, _this.botPrefixDefault))) {
+            if (discord_bot_domain_1.messageContainsPrefix(message.content, _this.botPrefix) ||
+                (_this.botPrefixDefault && discord_bot_domain_1.messageContainsPrefix(message.content, _this.botPrefixDefault))) {
                 message.content.split('\n').forEach(function (line) {
                     if (discord_bot_domain_1.lineContainsPrefix(line, _this.botPrefix + " ")) {
                         var command = line.substring(_this.botPrefix.length + 1).split(' ')[0];
                         var parsedLine = line.substring(_this.botPrefix.length + 1 + command.length);
                         discord_bot_domain_1.execute(_this.botCommands[command], _this, message, line, discord_bot_domain_1.getParametersFromLine(parsedLine));
                     }
-                    else if (_this.botCommands.default && _this.botPrefixDefault && discord_bot_domain_1.lineContainsPrefix(line, _this.botPrefixDefault)) {
+                    else if (_this.botCommands.default &&
+                        _this.botPrefixDefault &&
+                        discord_bot_domain_1.lineContainsPrefix(line, _this.botPrefixDefault)) {
                         _this.botCommands.default(_this, message, line, discord_bot_domain_1.getParametersFromLine(line));
                     }
                 });
@@ -69,7 +72,8 @@ var DiscordBot = /** @class */ (function () {
                 if (member.user.bot)
                     botCount_1++;
             });
-            if (guild.members.size > this.minimumGuildMembersForFarmCheck && (botCount_1 * 100) / guild.members.size >= this.maximumGuildBotsPercentage) {
+            if (guild.members.size > this.minimumGuildMembersForFarmCheck &&
+                (botCount_1 * 100) / guild.members.size >= this.maximumGuildBotsPercentage) {
                 guild.leave().then(rxjs_1.noop, this.onError('guild.leave'));
                 this.log("Server \"" + guild.name + "\" has been marked as potential bot farm");
                 return true;
@@ -124,10 +128,6 @@ var DiscordBot = /** @class */ (function () {
                 color: 15158332,
             },
         });
-    };
-    DiscordBot.prototype.hasPermission = function (_a, permission, checkAdmin) {
-        var permissions = _a.permissions;
-        return permissions.has(permission, checkAdmin);
     };
     return DiscordBot;
 }());

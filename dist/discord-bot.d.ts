@@ -1,4 +1,4 @@
-import { Client, GuildMember, Message, MessageOptions, PermissionResolvable, StringResolvable } from 'discord.js';
+import { Client, Message, MessageOptions, StringResolvable } from 'discord.js';
 import { DiscordBotSettings } from './discord-bot.types';
 export declare class DiscordBot {
     readonly botPrefix: DiscordBotSettings['botPrefix'];
@@ -23,5 +23,4 @@ export declare class DiscordBot {
     onWrongParameterCount(message: Message): void;
     sendMessage(message: Message, messageContent: StringResolvable, messageOptions?: MessageOptions): void;
     sendError(message: Message, error: Error | string): void;
-    hasPermission({ permissions }: GuildMember, permission: PermissionResolvable, checkAdmin?: boolean): boolean;
 }
