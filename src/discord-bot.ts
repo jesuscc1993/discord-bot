@@ -60,6 +60,8 @@ export class DiscordBot {
     });
 
     this.client.on('message', (message: Message) => {
+      if (message.author.bot) return;
+
       if (
         messageContainsPrefix(message.content, this.botPrefix) ||
         (this.botPrefixDefault && messageContainsPrefix(message.content, this.botPrefixDefault))

@@ -1,6 +1,6 @@
 {
   "name": "querybot",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "discord.js wrapper to facilitate the coding of Discord bots",
   "repository": {
     "type": "git",
