@@ -38,6 +38,8 @@ var DiscordBot = /** @class */ (function () {
             discord_bot_domain_1.execute(_this.onGuildLeft, _this, guild);
         });
         this.client.on('message', function (message) {
+            if (message.author.bot)
+                return;
             if (discord_bot_domain_1.messageContainsPrefix(message.content, _this.botPrefix) ||
                 (_this.botPrefixDefault && discord_bot_domain_1.messageContainsPrefix(message.content, _this.botPrefixDefault))) {
                 message.content.split('\n').forEach(function (line) {
