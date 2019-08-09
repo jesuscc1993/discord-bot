@@ -42,16 +42,25 @@ var DiscordBot = /** @class */ (function () {
                 return;
             if (discord_bot_domain_1.messageContainsPrefix(message.content, _this.botPrefix) ||
                 (_this.botPrefixDefault && discord_bot_domain_1.messageContainsPrefix(message.content, _this.botPrefixDefault))) {
-                message.content.split('\n').forEach(function (line) {
+                var commandIndex_1 = 0;
+                message.content.split('\n').forEach(function (line, index) {
                     if (discord_bot_domain_1.lineContainsPrefix(line, _this.botPrefix + " ")) {
                         var command = line.substring(_this.botPrefix.length + 1).split(' ')[0];
                         var parsedLine = line.substring(_this.botPrefix.length + 1 + command.length);
-                        discord_bot_domain_1.execute(_this.botCommands[command], _this, message, line, discord_bot_domain_1.getParametersFromLine(parsedLine));
+                        discord_bot_domain_1.execute(_this.botCommands[command], _this, message, line, discord_bot_domain_1.getParametersFromLine(parsedLine), {
+                            commandIndex: commandIndex_1,
+                            lineIndex: index,
+                        });
+                        commandIndex_1++;
                     }
                     else if (_this.botCommands.default &&
                         _this.botPrefixDefault &&
                         discord_bot_domain_1.lineContainsPrefix(line, _this.botPrefixDefault)) {
-                        _this.botCommands.default(_this, message, line, discord_bot_domain_1.getParametersFromLine(line));
+                        discord_bot_domain_1.execute(_this.botCommands.default, _this, message, line, discord_bot_domain_1.getParametersFromLine(line), {
+                            commandIndex: commandIndex_1,
+                            lineIndex: 0,
+                        });
+                        commandIndex_1++;
                     }
                 });
             }
