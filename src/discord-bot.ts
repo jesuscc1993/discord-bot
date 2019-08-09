@@ -66,17 +66,26 @@ export class DiscordBot {
         messageContainsPrefix(message.content, this.botPrefix) ||
         (this.botPrefixDefault && messageContainsPrefix(message.content, this.botPrefixDefault))
       ) {
-        message.content.split('\n').forEach(line => {
+        let commandIndex = 0;
+        message.content.split('\n').forEach((line, index) => {
           if (lineContainsPrefix(line, `${this.botPrefix} `)) {
             const command: string = line.substring(this.botPrefix.length + 1).split(' ')[0];
             const parsedLine = line.substring(this.botPrefix.length + 1 + command.length);
-            execute(this.botCommands[command], this, message, line, getParametersFromLine(parsedLine));
+            execute(this.botCommands[command], this, message, line, getParametersFromLine(parsedLine), {
+              commandIndex,
+              lineIndex: index,
+            });
+            commandIndex++;
           } else if (
             this.botCommands.default &&
             this.botPrefixDefault &&
             lineContainsPrefix(line, this.botPrefixDefault)
           ) {
-            this.botCommands.default(this, message, line, getParametersFromLine(line));
+            execute(this.botCommands.default, this, message, line, getParametersFromLine(line), {
+              commandIndex,
+              lineIndex: 0,
+            });
+            commandIndex++;
           }
         });
       } else if (message.isMentioned(this.client.user)) {
