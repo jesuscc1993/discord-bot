@@ -1,4 +1,4 @@
-import { ActivityType, Client, Message, MessageOptions, StringResolvable } from 'discord.js';
+import { ActivityOptions, Client, Message, MessageOptions, StringResolvable } from 'discord.js';
 import { DiscordBotSettings } from './discord-bot.types';
 export declare class DiscordBot {
     readonly botAuthToken: DiscordBotSettings['botAuthToken'];
@@ -15,7 +15,7 @@ export declare class DiscordBot {
     private client;
     constructor(discordBotSettings: DiscordBotSettings);
     getClient(): Client;
-    setActivityMessage(activityMessage: string, type?: ActivityType): void;
+    setActivityMessage(activityMessage: string, activityOptions: ActivityOptions): void;
     private onGuildUpdate;
     private leaveGuildWhenSuspectedAsBotFarm;
     private onError;

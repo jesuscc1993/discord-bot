@@ -72,9 +72,7 @@ var DiscordBot = /** @class */ (function () {
     DiscordBot.prototype.getClient = function () {
         return this.client;
     };
-    DiscordBot.prototype.setActivityMessage = function (activityMessage, type) {
-        if (type === void 0) { type = 'CUSTOM_STATUS'; }
-        var activityOptions = { type: type };
+    DiscordBot.prototype.setActivityMessage = function (activityMessage, activityOptions) {
         if (this.client.user) {
             this.client.user
                 .setActivity(activityMessage, activityOptions)
