@@ -7,13 +7,17 @@
     "url": "https://github.com/jesuscc1993/discord-bot"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@types/node": "^7.0.7",
-    "discord.js": "^11.4.2",
-    "rxjs": "^6.3.2",
-    "typescript": "^3.0.3"
+    "@types/ws": "^7.2.1",
+    "discord.js": "discordjs/discord.js",
+    "rxjs": "^6.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^12.12.6",
+    "typescript": "^3.7.5"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
