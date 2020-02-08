@@ -14,7 +14,7 @@ var DiscordBot = /** @class */ (function () {
         this.client.login(this.botAuthToken).then(rxjs_1.noop, this.onError("client.login"));
         this.client.on('error', this.onError("client.on('error'"));
         this.client.on('ready', function () {
-            _this.setActivityMessage();
+            discord_bot_domain_1.execute(_this.onLoad);
             var guildIdentifications = [];
             _this.client.guilds.forEach(function (guild) {
                 var leftGuild = _this.leaveGuildWhenSuspectedAsBotFarm(guild);
@@ -29,13 +29,13 @@ var DiscordBot = /** @class */ (function () {
         this.client.on('guildCreate', function (guild) {
             _this.log("Joined guild \"" + guild.name + "\"");
             _this.onGuildUpdate(guild);
-            discord_bot_domain_1.execute(_this.onGuildJoined, _this, guild);
+            discord_bot_domain_1.execute(_this.onGuildJoined, guild);
         });
         this.client.on('guildMemberAdd', function (guild) { return _this.onGuildUpdate(guild); });
         this.client.on('guildMemberRemove', function (guild) { return _this.onGuildUpdate(guild); });
         this.client.on('guildDelete', function (guild) {
             _this.log("Left guild \"" + guild.name + "\"");
-            discord_bot_domain_1.execute(_this.onGuildLeft, _this, guild);
+            discord_bot_domain_1.execute(_this.onGuildLeft, guild);
         });
         this.client.on('message', function (message) {
             if (message.author.bot)
@@ -47,7 +47,7 @@ var DiscordBot = /** @class */ (function () {
                     if (discord_bot_domain_1.lineContainsPrefix(line, _this.botPrefix + " ")) {
                         var command = line.substring(_this.botPrefix.length + 1).split(' ')[0];
                         var parsedLine = line.substring(_this.botPrefix.length + 1 + command.length);
-                        discord_bot_domain_1.execute(_this.botCommands[command], _this, message, line, discord_bot_domain_1.getParametersFromLine(parsedLine), {
+                        discord_bot_domain_1.execute(_this.botCommands[command], message, line, discord_bot_domain_1.getParametersFromLine(parsedLine), {
                             commandIndex: commandIndex_1,
                             lineIndex: index,
                         });
@@ -56,7 +56,7 @@ var DiscordBot = /** @class */ (function () {
                     else if (_this.botCommands.default &&
                         _this.botPrefixDefault &&
                         discord_bot_domain_1.lineContainsPrefix(line, _this.botPrefixDefault)) {
-                        discord_bot_domain_1.execute(_this.botCommands.default, _this, message, line, discord_bot_domain_1.getParametersFromLine(line), {
+                        discord_bot_domain_1.execute(_this.botCommands.default, message, line, discord_bot_domain_1.getParametersFromLine(line), {
                             commandIndex: commandIndex_1,
                             lineIndex: 0,
                         });
@@ -64,17 +64,25 @@ var DiscordBot = /** @class */ (function () {
                     }
                 });
             }
-            else if (message.isMentioned(_this.client.user)) {
-                discord_bot_domain_1.execute(_this.onMention, _this, message);
+            else if (_this.client.user && message.mentions.has(_this.client.user)) {
+                discord_bot_domain_1.execute(_this.onMention, message);
             }
         });
     }
     DiscordBot.prototype.getClient = function () {
         return this.client;
     };
+    DiscordBot.prototype.setActivityMessage = function (activityMessage, type) {
+        if (type === void 0) { type = 'CUSTOM_STATUS'; }
+        var activityOptions = { type: type };
+        if (this.client.user) {
+            this.client.user
+                .setActivity(activityMessage, activityOptions)
+                .then(rxjs_1.noop, this.onError('client.user.setActivity', [activityMessage, JSON.stringify(activityOptions)]));
+        }
+    };
     DiscordBot.prototype.onGuildUpdate = function (guild) {
         this.leaveGuildWhenSuspectedAsBotFarm(guild);
-        this.setActivityMessage();
     };
     DiscordBot.prototype.leaveGuildWhenSuspectedAsBotFarm = function (guild) {
         if (guild.members && this.minimumGuildMembersForFarmCheck && this.maximumGuildBotsPercentage) {
@@ -91,13 +99,6 @@ var DiscordBot = /** @class */ (function () {
             }
         }
         return false;
-    };
-    DiscordBot.prototype.setActivityMessage = function () {
-        var activityMessage = this.botPrefix + " help | " + this.client.guilds.size + " servers";
-        var activityOptions = { type: 'LISTENING' };
-        this.client.user
-            .setActivity(activityMessage, activityOptions)
-            .then(rxjs_1.noop, this.onError('client.user.setActivity', [activityMessage, JSON.stringify(activityOptions)]));
     };
     DiscordBot.prototype.onError = function (functionName, parameters) {
         var _this = this;
@@ -122,13 +123,16 @@ var DiscordBot = /** @class */ (function () {
     };
     DiscordBot.prototype.sendMessage = function (message, messageContent, messageOptions) {
         var _this = this;
-        if (message.guild.me.permissions.has('SEND_MESSAGES')) {
-            message.channel.send(messageContent, messageOptions).then(rxjs_1.noop, function (error) {
-                _this.onError(error, ['message.channel.send', messageContent, JSON.stringify(messageOptions)]);
-            });
-        }
-        else {
-            message.author.send("I don't have the permission to send messages on the server \"" + message.guild.name + "\". Please, contact the server admin to have this permission added.");
+        var _a;
+        if (message.guild) {
+            if ((_a = message.guild.me) === null || _a === void 0 ? void 0 : _a.permissions.has('SEND_MESSAGES')) {
+                message.channel.send(messageContent, messageOptions).then(rxjs_1.noop, function (error) {
+                    _this.onError(error, ['message.channel.send', messageContent, JSON.stringify(messageOptions)]);
+                });
+            }
+            else {
+                message.author.send("I don't have the permission to send messages on the server \"" + message.guild.name + "\". Please, contact the server admin to have this permission added.");
+            }
         }
     };
     DiscordBot.prototype.sendError = function (message, error) {
