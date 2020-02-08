@@ -1,13 +1,4 @@
-import Discord, {
-  ActivityOptions,
-  ActivityType,
-  Client,
-  Guild,
-  GuildMember,
-  Message,
-  MessageOptions,
-  StringResolvable,
-} from 'discord.js';
+import Discord, { ActivityOptions, Client, Guild, GuildMember, Message, MessageOptions, StringResolvable } from 'discord.js';
 import { noop } from 'rxjs';
 
 import { execute, getParametersFromLine, lineContainsPrefix, messageContainsPrefix } from './discord-bot.domain';
@@ -108,8 +99,7 @@ export class DiscordBot {
     return this.client;
   }
 
-  public setActivityMessage(activityMessage: string, type: ActivityType = 'CUSTOM_STATUS') {
-    const activityOptions: ActivityOptions = { type };
+  public setActivityMessage(activityMessage: string, activityOptions: ActivityOptions) {
     if (this.client.user) {
       this.client.user
         .setActivity(activityMessage, activityOptions)
