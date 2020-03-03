@@ -97,20 +97,22 @@ export class DiscordBot {
   }
 
   private leaveGuildsSuspectedAsBotFarms() {
-    this.client.guilds.forEach(guild => this.leaveGuildWhenSuspectedAsBotFarm(guild));
+    this.client.guilds.cache.forEach(guild => this.leaveGuildWhenSuspectedAsBotFarm(guild));
   }
 
   private leaveGuildWhenSuspectedAsBotFarm(guild: Guild) {
-    if (guild.members && this.minimumGuildMembersForFarmCheck && this.maximumGuildBotsPercentage) {
+    const members = guild.members && guild.members.cache;
+
+    if (members && this.minimumGuildMembersForFarmCheck && this.maximumGuildBotsPercentage) {
       let botCount = 0;
 
-      guild.members.forEach((member: GuildMember) => {
+      members.forEach((member: GuildMember) => {
         if (member.user.bot) botCount++;
       });
 
       if (
-        guild.members.size > this.minimumGuildMembersForFarmCheck &&
-        (botCount * 100) / guild.members.size >= this.maximumGuildBotsPercentage
+        members.size > this.minimumGuildMembersForFarmCheck &&
+        (botCount * 100) / members.size >= this.maximumGuildBotsPercentage
       ) {
         guild.leave().then(noop, this.onError('guild.leave'));
         this.log(`Server "${guild.name}" has been marked as potential bot farm`);
