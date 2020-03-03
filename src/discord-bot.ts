@@ -30,22 +30,7 @@ export class DiscordBot {
 
     this.client.on('ready', () => {
       execute(this.onLoad);
-
-      let guildIdentifications: string[] = [];
-      this.client.guilds.forEach((guild: Guild) => {
-        const leftGuild = this.leaveGuildWhenSuspectedAsBotFarm(guild);
-        if (!leftGuild) {
-          guildIdentifications.push(`${guild.id} ("${guild.name}")`);
-        }
-      });
-
-      if (guildIdentifications.length) {
-        this.log(
-          `Currently running on the following ${
-            guildIdentifications.length
-          } server(s):\n  ${guildIdentifications.sort().join('\n  ')}`,
-        );
-      }
+      this.leaveGuildsSuspectedAsBotFarms();
     });
 
     this.client.on('guildCreate', (guild: Guild) => {
@@ -111,7 +96,11 @@ export class DiscordBot {
     this.leaveGuildWhenSuspectedAsBotFarm(guild);
   }
 
-  private leaveGuildWhenSuspectedAsBotFarm(guild: Guild): boolean {
+  private leaveGuildsSuspectedAsBotFarms() {
+    this.client.guilds.forEach(guild => this.leaveGuildWhenSuspectedAsBotFarm(guild));
+  }
+
+  private leaveGuildWhenSuspectedAsBotFarm(guild: Guild) {
     if (guild.members && this.minimumGuildMembersForFarmCheck && this.maximumGuildBotsPercentage) {
       let botCount = 0;
 
@@ -125,11 +114,8 @@ export class DiscordBot {
       ) {
         guild.leave().then(noop, this.onError('guild.leave'));
         this.log(`Server "${guild.name}" has been marked as potential bot farm`);
-        return true;
       }
     }
-
-    return false;
   }
 
   private onError(functionName: string, parameters?: Array<string | number | boolean | undefined>) {
