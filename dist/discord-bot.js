@@ -75,17 +75,18 @@ var DiscordBot = /** @class */ (function () {
     };
     DiscordBot.prototype.leaveGuildsSuspectedAsBotFarms = function () {
         var _this = this;
-        this.client.guilds.forEach(function (guild) { return _this.leaveGuildWhenSuspectedAsBotFarm(guild); });
+        this.client.guilds.cache.forEach(function (guild) { return _this.leaveGuildWhenSuspectedAsBotFarm(guild); });
     };
     DiscordBot.prototype.leaveGuildWhenSuspectedAsBotFarm = function (guild) {
-        if (guild.members && this.minimumGuildMembersForFarmCheck && this.maximumGuildBotsPercentage) {
+        var members = guild.members && guild.members.cache;
+        if (members && this.minimumGuildMembersForFarmCheck && this.maximumGuildBotsPercentage) {
             var botCount_1 = 0;
-            guild.members.forEach(function (member) {
+            members.forEach(function (member) {
                 if (member.user.bot)
                     botCount_1++;
             });
-            if (guild.members.size > this.minimumGuildMembersForFarmCheck &&
-                (botCount_1 * 100) / guild.members.size >= this.maximumGuildBotsPercentage) {
+            if (members.size > this.minimumGuildMembersForFarmCheck &&
+                (botCount_1 * 100) / members.size >= this.maximumGuildBotsPercentage) {
                 guild.leave().then(rxjs_1.noop, this.onError('guild.leave'));
                 this.log("Server \"" + guild.name + "\" has been marked as potential bot farm");
             }
