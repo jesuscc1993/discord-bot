@@ -17,6 +17,7 @@ export declare class DiscordBot {
     getClient(): Client;
     setActivityMessage(activityMessage: string, activityOptions: ActivityOptions): void;
     private onGuildUpdate;
+    private leaveGuildsSuspectedAsBotFarms;
     private leaveGuildWhenSuspectedAsBotFarm;
     private onError;
     private log;

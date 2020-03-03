@@ -15,16 +15,7 @@ var DiscordBot = /** @class */ (function () {
         this.client.on('error', this.onError("client.on('error'"));
         this.client.on('ready', function () {
             discord_bot_domain_1.execute(_this.onLoad);
-            var guildIdentifications = [];
-            _this.client.guilds.forEach(function (guild) {
-                var leftGuild = _this.leaveGuildWhenSuspectedAsBotFarm(guild);
-                if (!leftGuild) {
-                    guildIdentifications.push(guild.id + " (\"" + guild.name + "\")");
-                }
-            });
-            if (guildIdentifications.length) {
-                _this.log("Currently running on the following " + guildIdentifications.length + " server(s):\n  " + guildIdentifications.sort().join('\n  '));
-            }
+            _this.leaveGuildsSuspectedAsBotFarms();
         });
         this.client.on('guildCreate', function (guild) {
             _this.log("Joined guild \"" + guild.name + "\"");
@@ -82,6 +73,10 @@ var DiscordBot = /** @class */ (function () {
     DiscordBot.prototype.onGuildUpdate = function (guild) {
         this.leaveGuildWhenSuspectedAsBotFarm(guild);
     };
+    DiscordBot.prototype.leaveGuildsSuspectedAsBotFarms = function () {
+        var _this = this;
+        this.client.guilds.forEach(function (guild) { return _this.leaveGuildWhenSuspectedAsBotFarm(guild); });
+    };
     DiscordBot.prototype.leaveGuildWhenSuspectedAsBotFarm = function (guild) {
         if (guild.members && this.minimumGuildMembersForFarmCheck && this.maximumGuildBotsPercentage) {
             var botCount_1 = 0;
@@ -93,10 +88,8 @@ var DiscordBot = /** @class */ (function () {
                 (botCount_1 * 100) / guild.members.size >= this.maximumGuildBotsPercentage) {
                 guild.leave().then(rxjs_1.noop, this.onError('guild.leave'));
                 this.log("Server \"" + guild.name + "\" has been marked as potential bot farm");
-                return true;
             }
         }
-        return false;
     };
     DiscordBot.prototype.onError = function (functionName, parameters) {
         var _this = this;
