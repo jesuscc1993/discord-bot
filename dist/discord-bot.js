@@ -68,7 +68,7 @@ var DiscordBot = /** @class */ (function () {
     };
     DiscordBot.prototype.leaveGuildsSuspectedAsBotFarms = function () {
         var _this = this;
-        this.client.guilds.cache.forEach(function (guild) { return _this.leaveGuildWhenSuspectedAsBotFarm(guild); });
+        this.getGuilds().forEach(function (guild) { return _this.leaveGuildWhenSuspectedAsBotFarm(guild); });
     };
     DiscordBot.prototype.leaveGuildWhenSuspectedAsBotFarm = function (guild) {
         var _this = this;
