@@ -1,4 +1,4 @@
-import { ActivityOptions, Client, Message, MessageOptions, StringResolvable } from 'discord.js';
+import Discord, { ActivityOptions, Guild, Message, MessageOptions, StringResolvable } from 'discord.js';
 import { DiscordBotSettings } from './discord-bot.types';
 export declare class DiscordBot {
     readonly botAuthToken: DiscordBotSettings['botAuthToken'];
@@ -14,15 +14,18 @@ export declare class DiscordBot {
     readonly onMention?: DiscordBotSettings['onMention'];
     private client;
     constructor(discordBotSettings: DiscordBotSettings);
-    getClient(): Client;
-    setActivityMessage(activityMessage: string, activityOptions: ActivityOptions): void;
     private onGuildUpdate;
     private leaveGuildsSuspectedAsBotFarms;
     private leaveGuildWhenSuspectedAsBotFarm;
     private onError;
     private log;
     private error;
-    onWrongParameterCount(message: Message): void;
-    sendMessage(message: Message, messageContent: StringResolvable, messageOptions?: MessageOptions): void;
+    getClient(): Discord.Client;
+    getUser(): Discord.ClientUser | null;
+    getGuilds(): Discord.Collection<string, Discord.Guild>;
+    getMembers(guild: Guild): Discord.Collection<string, Discord.GuildMember>;
+    sendMessage(message: Message, messageContent: StringResolvable, messageOptions?: MessageOptions): import("rxjs").Observable<never> | undefined;
     sendError(message: Message, error: Error | string): void;
+    setActivityMessage(activityMessage: string, activityOptions?: ActivityOptions): import("rxjs").Subscription;
+    onWrongParameterCount(message: Message): void;
 }

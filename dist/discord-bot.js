@@ -5,14 +5,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var discord_js_1 = __importDefault(require("discord.js"));
 var rxjs_1 = require("rxjs");
+var operators_1 = require("rxjs/operators");
 var discord_bot_domain_1 = require("./discord-bot.domain");
 var DiscordBot = /** @class */ (function () {
     function DiscordBot(discordBotSettings) {
         var _this = this;
         Object.assign(this, discordBotSettings);
         this.client = new discord_js_1.default.Client();
-        this.client.login(this.botAuthToken).then(rxjs_1.noop, this.onError("client.login"));
-        this.client.on('error', this.onError("client.on('error'"));
+        this.client.on('error', function (error) { return _this.onError(error); });
         this.client.on('ready', function () {
             discord_bot_domain_1.execute(_this.onLoad);
             _this.leaveGuildsSuspectedAsBotFarms();
@@ -34,13 +34,13 @@ var DiscordBot = /** @class */ (function () {
             if (discord_bot_domain_1.messageContainsPrefix(message.content, _this.botPrefix) ||
                 (_this.botPrefixDefault && discord_bot_domain_1.messageContainsPrefix(message.content, _this.botPrefixDefault))) {
                 var commandIndex_1 = 0;
-                message.content.split('\n').forEach(function (line, index) {
+                message.content.split('\n').forEach(function (line, lineIndex) {
                     if (discord_bot_domain_1.lineContainsPrefix(line, _this.botPrefix + " ")) {
                         var command = line.substring(_this.botPrefix.length + 1).split(' ')[0];
                         var parsedLine = line.substring(_this.botPrefix.length + 1 + command.length);
                         discord_bot_domain_1.execute(_this.botCommands[command], message, line, discord_bot_domain_1.getParametersFromLine(parsedLine), {
                             commandIndex: commandIndex_1,
-                            lineIndex: index,
+                            lineIndex: lineIndex,
                         });
                         commandIndex_1++;
                     }
@@ -59,17 +59,10 @@ var DiscordBot = /** @class */ (function () {
                 discord_bot_domain_1.execute(_this.onMention, message);
             }
         });
+        rxjs_1.from(this.client.login(this.botAuthToken))
+            .pipe(operators_1.catchError(function (error) { return rxjs_1.of(_this.onError(error, 'client.login')); }))
+            .subscribe();
     }
-    DiscordBot.prototype.getClient = function () {
-        return this.client;
-    };
-    DiscordBot.prototype.setActivityMessage = function (activityMessage, activityOptions) {
-        if (this.client.user) {
-            this.client.user
-                .setActivity(activityMessage, activityOptions)
-                .then(rxjs_1.noop, this.onError('client.user.setActivity', [activityMessage, JSON.stringify(activityOptions)]));
-        }
-    };
     DiscordBot.prototype.onGuildUpdate = function (guild) {
         this.leaveGuildWhenSuspectedAsBotFarm(guild);
     };
@@ -78,54 +71,66 @@ var DiscordBot = /** @class */ (function () {
         this.client.guilds.cache.forEach(function (guild) { return _this.leaveGuildWhenSuspectedAsBotFarm(guild); });
     };
     DiscordBot.prototype.leaveGuildWhenSuspectedAsBotFarm = function (guild) {
-        var members = guild.members && guild.members.cache;
-        if (members && this.minimumGuildMembersForFarmCheck && this.maximumGuildBotsPercentage) {
-            var botCount_1 = 0;
-            members.forEach(function (member) {
-                if (member.user.bot)
-                    botCount_1++;
-            });
-            if (members.size > this.minimumGuildMembersForFarmCheck &&
-                (botCount_1 * 100) / members.size >= this.maximumGuildBotsPercentage) {
-                guild.leave().then(rxjs_1.noop, this.onError('guild.leave'));
-                this.log("Server \"" + guild.name + "\" has been marked as potential bot farm");
+        var _this = this;
+        var members = this.getMembers(guild);
+        if (this.minimumGuildMembersForFarmCheck &&
+            this.maximumGuildBotsPercentage &&
+            members &&
+            members.size > this.minimumGuildMembersForFarmCheck) {
+            var botCount = members.reduce(function (botCount, member) { return botCount + (member.user.bot ? 1 : 0); }, 0);
+            if ((botCount * 100) / members.size >= this.maximumGuildBotsPercentage) {
+                rxjs_1.from(guild.leave())
+                    .pipe(operators_1.tap(function () { return _this.log("Server \"" + guild.name + "\" has been identified as a potential bot farm"); }), operators_1.catchError(function (error) { return rxjs_1.of(_this.onError(error, 'guild.leave')); }))
+                    .subscribe();
             }
         }
     };
-    DiscordBot.prototype.onError = function (functionName, parameters) {
-        var _this = this;
-        return function (error) {
-            var errorMessage = error + " thrown";
-            if (functionName)
-                errorMessage += " when calling " + functionName;
-            if (parameters)
-                errorMessage += " with parameters: " + parameters.join(', ');
-            _this.error(errorMessage + ".");
-        };
+    DiscordBot.prototype.onError = function (error, functionName, parameters) {
+        var errorMessage = "\"" + error + "\" thrown";
+        if (functionName) {
+            errorMessage += " when calling " + functionName;
+        }
+        if (parameters) {
+            errorMessage += " with parameters: " + parameters.map(function (parameter) { return JSON.stringify(parameter); }).join(', ');
+        }
+        this.error(errorMessage + ".");
     };
     DiscordBot.prototype.log = function (message) {
-        this.logger.info(message);
+        this.logger.info("DiscordBot: " + message);
     };
     DiscordBot.prototype.error = function (error) {
-        this.logger.error(error);
+        this.logger.error("DiscordBot: " + error);
     };
     /* public */
-    DiscordBot.prototype.onWrongParameterCount = function (message) {
-        this.sendMessage(message, "Invalid parameter count.");
+    DiscordBot.prototype.getClient = function () {
+        return this.client;
+    };
+    DiscordBot.prototype.getUser = function () {
+        return this.client.user;
+    };
+    DiscordBot.prototype.getGuilds = function () {
+        return this.client.guilds.cache;
+    };
+    DiscordBot.prototype.getMembers = function (guild) {
+        return guild.members.cache;
     };
     DiscordBot.prototype.sendMessage = function (message, messageContent, messageOptions) {
         var _this = this;
         var _a;
-        if (message.guild) {
-            if ((_a = message.guild.me) === null || _a === void 0 ? void 0 : _a.permissions.has('SEND_MESSAGES')) {
-                message.channel.send(messageContent, messageOptions).then(rxjs_1.noop, function (error) {
-                    _this.onError(error, ['message.channel.send', messageContent, JSON.stringify(messageOptions)]);
-                });
-            }
-            else {
-                message.author.send("I don't have the permission to send messages on the server \"" + message.guild.name + "\". Please, contact the server admin to have this permission added.");
-            }
+        if (!message.guild)
+            return rxjs_1.throwError('Guild is unset');
+        if (!((_a = message.guild.me) === null || _a === void 0 ? void 0 : _a.permissions.has('SEND_MESSAGES'))) {
+            rxjs_1.from(message.author.send("I do not have permission to send messages on the server \"" + message.guild.name + "\"."))
+                .pipe(operators_1.catchError(function (error) {
+                return rxjs_1.of(_this.onError(error, 'message.author.send', [message, messageContent, messageOptions]));
+            }))
+                .subscribe();
         }
+        rxjs_1.from(message.channel.send(messageContent, messageOptions))
+            .pipe(operators_1.catchError(function (error) {
+            return rxjs_1.of(_this.onError(error, 'message.channel.send', [message, messageContent, messageOptions]));
+        }))
+            .subscribe();
     };
     DiscordBot.prototype.sendError = function (message, error) {
         var errorMessage = error.message || error;
@@ -135,6 +140,19 @@ var DiscordBot = /** @class */ (function () {
                 color: 15158332,
             },
         });
+    };
+    DiscordBot.prototype.setActivityMessage = function (activityMessage, activityOptions) {
+        var _this = this;
+        return (this.client.user
+            ? rxjs_1.from(this.client.user.setActivity(activityMessage, activityOptions))
+            : rxjs_1.throwError('Client is missing'))
+            .pipe(operators_1.catchError(function (error) {
+            return rxjs_1.of(_this.onError(error, 'this.client.user.setActivity', [activityMessage, activityOptions]));
+        }))
+            .subscribe();
+    };
+    DiscordBot.prototype.onWrongParameterCount = function (message) {
+        this.sendMessage(message, "Invalid parameter count.");
     };
     return DiscordBot;
 }());

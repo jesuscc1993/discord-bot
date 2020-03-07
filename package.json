@@ -1,7 +1,23 @@
 {
-  "name": "discord-bot",
-  "version": "1.0.7",
+  "dependencies": {
+    "@types/ws": "^7.2.1",
+    "discord.js": "^12.0.1",
+    "rxjs": "^6.5.4"
+  },
   "description": "discord.js wrapper to facilitate the coding of Discord bots",
+  "devDependencies": {
+    "@types/node": "^12.12.6",
+    "typescript": "^3.7.5"
+  },
+  "license": "CC-BY-NC-SA-4.0",
+  "main": "dist/index.js",
+  "name": "discord-bot",
+  "prettier": {
+    "printWidth": 120,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "all"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/jesuscc1993/discord-bot"
@@ -10,21 +26,6 @@
     "build": "tsc",
     "lint": "tsc --noEmit"
   },
-  "dependencies": {
-    "@types/ws": "^7.2.1",
-    "discord.js": "^12.0.1",
-    "rxjs": "^6.5.4"
-  },
-  "devDependencies": {
-    "@types/node": "^12.12.6",
-    "typescript": "^3.7.5"
-  },
-  "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "prettier": {
-    "printWidth": 120,
-    "semi": true,
-    "singleQuote": true,
-    "trailingComma": "all"
-  }
+  "version": "1.0.8"
 }
