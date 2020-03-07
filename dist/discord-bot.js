@@ -22,14 +22,15 @@ var DiscordBot = /** @class */ (function () {
             _this.onGuildUpdate(guild);
             discord_bot_domain_1.execute(_this.onGuildJoined, guild);
         });
-        this.client.on('guildMemberAdd', function (guild) { return _this.onGuildUpdate(guild); });
-        this.client.on('guildMemberRemove', function (guild) { return _this.onGuildUpdate(guild); });
+        this.client.on('guildMemberAdd', function (member) { return member.guild && _this.onGuildUpdate(member.guild); });
+        this.client.on('guildMemberRemove', function (member) { return member.guild && _this.onGuildUpdate(member.guild); });
         this.client.on('guildDelete', function (guild) {
             _this.log("Left guild \"" + guild.name + "\"");
             discord_bot_domain_1.execute(_this.onGuildLeft, guild);
         });
         this.client.on('message', function (message) {
-            if (message.author.bot)
+            var _a, _b;
+            if (((_a = message.author) === null || _a === void 0 ? void 0 : _a.bot) || !message.content)
                 return;
             if (discord_bot_domain_1.messageContainsPrefix(message.content, _this.botPrefix) ||
                 (_this.botPrefixDefault && discord_bot_domain_1.messageContainsPrefix(message.content, _this.botPrefixDefault))) {
@@ -55,7 +56,7 @@ var DiscordBot = /** @class */ (function () {
                     }
                 });
             }
-            else if (_this.client.user && message.mentions.has(_this.client.user)) {
+            else if (_this.client.user && ((_b = message.mentions) === null || _b === void 0 ? void 0 : _b.has(_this.client.user))) {
                 discord_bot_domain_1.execute(_this.onMention, message);
             }
         });
