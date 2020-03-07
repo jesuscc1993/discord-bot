@@ -24,7 +24,7 @@ export declare class DiscordBot {
     getUser(): Discord.ClientUser | null;
     getGuilds(): Discord.Collection<string, Discord.Guild>;
     getMembers(guild: Guild): Discord.Collection<string, Discord.GuildMember>;
-    sendMessage(message: Message, messageContent: StringResolvable, messageOptions?: MessageOptions): import("rxjs").Observable<never> | undefined;
+    sendMessage(message: Message, messageContent: StringResolvable, messageOptions?: MessageOptions): import("rxjs").Subscription;
     sendError(message: Message, error: Error | string): void;
     setActivityMessage(activityMessage: string, activityOptions?: ActivityOptions): import("rxjs").Subscription;
     onWrongParameterCount(message: Message): void;

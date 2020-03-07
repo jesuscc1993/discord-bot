@@ -118,18 +118,30 @@ var DiscordBot = /** @class */ (function () {
     DiscordBot.prototype.sendMessage = function (message, messageContent, messageOptions) {
         var _this = this;
         var _a;
-        if (!message.guild)
-            return rxjs_1.throwError('Guild is unset');
-        if (!((_a = message.guild.me) === null || _a === void 0 ? void 0 : _a.permissions.has('SEND_MESSAGES'))) {
-            rxjs_1.from(message.author.send("I do not have permission to send messages on the server \"" + message.guild.name + "\"."))
-                .pipe(operators_1.catchError(function (error) {
-                return rxjs_1.of(_this.onError(error, 'message.author.send', [message, messageContent, messageOptions]));
-            }))
-                .subscribe();
+        var guild = message.guild, channel = message.channel;
+        if (guild && guild.me) {
+            if (!guild.me.permissions.has('SEND_MESSAGES')) {
+                var errorContent_1 = "I do not have permission to send messages on server \"" + guild.name + "\".";
+                return rxjs_1.from(message.author.send(errorContent_1))
+                    .pipe(operators_1.catchError(function (error) {
+                    return rxjs_1.of(_this.onError(error, 'message.author.send', [errorContent_1]));
+                }))
+                    .subscribe();
+            }
+            if (guild.me &&
+                channel.type === 'text' &&
+                !((_a = channel.permissionsFor(guild.me)) === null || _a === void 0 ? void 0 : _a.has('SEND_MESSAGES'))) {
+                var errorContent_2 = "I do not have permission to send messages on the \"" + channel.name + "\" channel on server \"" + guild.name + "\".";
+                return rxjs_1.from(message.author.send(errorContent_2))
+                    .pipe(operators_1.catchError(function (error) {
+                    return rxjs_1.of(_this.onError(error, 'message.author.send', [errorContent_2]));
+                }))
+                    .subscribe();
+            }
         }
-        rxjs_1.from(message.channel.send(messageContent, messageOptions))
+        return rxjs_1.from(message.channel.send(messageContent, messageOptions))
             .pipe(operators_1.catchError(function (error) {
-            return rxjs_1.of(_this.onError(error, 'message.channel.send', [message, messageContent, messageOptions]));
+            return rxjs_1.of(_this.onError(error, 'message.channel.send', [messageContent, messageOptions]));
         }))
             .subscribe();
     };
