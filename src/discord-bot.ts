@@ -45,20 +45,20 @@ export class DiscordBot {
       this.leaveGuildsSuspectedAsBotFarms();
     });
 
-    this.client.on('guildCreate', (guild: Guild) => {
+    this.client.on('guildCreate', guild => {
       this.log(`Joined guild "${guild.name}"`);
       this.onGuildUpdate(guild);
       execute(this.onGuildJoined, guild);
     });
-    this.client.on('guildMemberAdd', (guild: Guild) => this.onGuildUpdate(guild));
-    this.client.on('guildMemberRemove', (guild: Guild) => this.onGuildUpdate(guild));
-    this.client.on('guildDelete', (guild: Guild) => {
+    this.client.on('guildMemberAdd', member => member.guild && this.onGuildUpdate(member.guild));
+    this.client.on('guildMemberRemove', member => member.guild && this.onGuildUpdate(member.guild));
+    this.client.on('guildDelete', guild => {
       this.log(`Left guild "${guild.name}"`);
       execute(this.onGuildLeft, guild);
     });
 
-    this.client.on('message', (message: Message) => {
-      if (message.author.bot) return;
+    this.client.on('message', message => {
+      if (message.author?.bot || !message.content) return;
 
       if (
         messageContainsPrefix(message.content, this.botPrefix) ||
@@ -86,7 +86,7 @@ export class DiscordBot {
             commandIndex++;
           }
         });
-      } else if (this.client.user && message.mentions.has(this.client.user)) {
+      } else if (this.client.user && message.mentions?.has(this.client.user)) {
         execute(this.onMention, message);
       }
     });
