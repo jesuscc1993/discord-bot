@@ -6,6 +6,7 @@ import Discord, {
   Message,
   MessageOptions,
   StringResolvable,
+  TextChannel,
 } from 'discord.js';
 import { from, noop, of, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
@@ -162,22 +163,40 @@ export class DiscordBot {
   }
 
   public sendMessage(message: Message, messageContent: StringResolvable, messageOptions?: MessageOptions) {
-    if (!message.guild) return throwError('Guild is unset');
+    const { guild, channel } = message;
 
-    if (!message.guild.me?.permissions.has('SEND_MESSAGES')) {
-      from(message.author.send(`I do not have permission to send messages on the server "${message.guild.name}".`))
-        .pipe(
-          catchError(error => {
-            return of(this.onError(error, 'message.author.send', [message, messageContent, messageOptions]));
-          }),
-        )
-        .subscribe();
+    if (guild && guild.me) {
+      if (!guild.me.permissions.has('SEND_MESSAGES')) {
+        const errorContent = `I do not have permission to send messages on server "${guild.name}".`;
+        return from(message.author.send(errorContent))
+          .pipe(
+            catchError(error => {
+              return of(this.onError(error, 'message.author.send', [errorContent]));
+            }),
+          )
+          .subscribe();
+      }
+
+      if (
+        guild.me &&
+        channel.type === 'text' &&
+        !(<TextChannel>channel).permissionsFor(guild.me)?.has('SEND_MESSAGES')
+      ) {
+        const errorContent = `I do not have permission to send messages on the "${channel.name}" channel on server "${guild.name}".`;
+        return from(message.author.send(errorContent))
+          .pipe(
+            catchError(error => {
+              return of(this.onError(error, 'message.author.send', [errorContent]));
+            }),
+          )
+          .subscribe();
+      }
     }
 
-    from(message.channel.send(messageContent, messageOptions))
+    return from(message.channel.send(messageContent, messageOptions))
       .pipe(
         catchError(error => {
-          return of(this.onError(error, 'message.channel.send', [message, messageContent, messageOptions]));
+          return of(this.onError(error, 'message.channel.send', [messageContent, messageOptions]));
         }),
       )
       .subscribe();
