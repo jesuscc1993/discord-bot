@@ -101,7 +101,7 @@ export class DiscordBot {
   }
 
   private leaveGuildsSuspectedAsBotFarms() {
-    this.client.guilds.cache.forEach(guild => this.leaveGuildWhenSuspectedAsBotFarm(guild));
+    this.getGuilds().forEach(guild => this.leaveGuildWhenSuspectedAsBotFarm(guild));
   }
 
   private leaveGuildWhenSuspectedAsBotFarm(guild: Guild) {
