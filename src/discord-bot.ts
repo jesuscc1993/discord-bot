@@ -1,7 +1,21 @@
-import Discord, { ActivityOptions, Client, Guild, GuildMember, Message, MessageOptions, StringResolvable } from 'discord.js';
-import { noop } from 'rxjs';
+import Discord, {
+  ActivityOptions,
+  Client,
+  Guild,
+  GuildMember,
+  Message,
+  MessageOptions,
+  StringResolvable,
+} from 'discord.js';
+import { from, noop, of, throwError } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 
-import { execute, getParametersFromLine, lineContainsPrefix, messageContainsPrefix } from './discord-bot.domain';
+import {
+  execute,
+  getParametersFromLine,
+  lineContainsPrefix,
+  messageContainsPrefix,
+} from './discord-bot.domain';
 import { DiscordBotSettings } from './discord-bot.types';
 
 export class DiscordBot {
@@ -24,9 +38,7 @@ export class DiscordBot {
 
     this.client = new Discord.Client();
 
-    this.client.login(this.botAuthToken).then(noop, this.onError(`client.login`));
-
-    this.client.on('error', this.onError(`client.on('error'`));
+    this.client.on('error', error => this.onError(error));
 
     this.client.on('ready', () => {
       execute(this.onLoad);
@@ -53,13 +65,13 @@ export class DiscordBot {
         (this.botPrefixDefault && messageContainsPrefix(message.content, this.botPrefixDefault))
       ) {
         let commandIndex = 0;
-        message.content.split('\n').forEach((line, index) => {
+        message.content.split('\n').forEach((line, lineIndex) => {
           if (lineContainsPrefix(line, `${this.botPrefix} `)) {
             const command = line.substring(this.botPrefix.length + 1).split(' ')[0];
             const parsedLine = line.substring(this.botPrefix.length + 1 + command.length);
             execute(this.botCommands[command], message, line, getParametersFromLine(parsedLine), {
               commandIndex,
-              lineIndex: index,
+              lineIndex,
             });
             commandIndex++;
           } else if (
@@ -78,18 +90,10 @@ export class DiscordBot {
         execute(this.onMention, message);
       }
     });
-  }
 
-  public getClient(): Client {
-    return this.client;
-  }
-
-  public setActivityMessage(activityMessage: string, activityOptions: ActivityOptions) {
-    if (this.client.user) {
-      this.client.user
-        .setActivity(activityMessage, activityOptions)
-        .then(noop, this.onError('client.user.setActivity', [activityMessage, JSON.stringify(activityOptions)]));
-    }
+    from(this.client.login(this.botAuthToken))
+      .pipe(catchError(error => of(this.onError(error, 'client.login'))))
+      .subscribe();
   }
 
   private onGuildUpdate(guild: Guild) {
@@ -101,60 +105,82 @@ export class DiscordBot {
   }
 
   private leaveGuildWhenSuspectedAsBotFarm(guild: Guild) {
-    const members = guild.members && guild.members.cache;
-
-    if (members && this.minimumGuildMembersForFarmCheck && this.maximumGuildBotsPercentage) {
-      let botCount = 0;
-
-      members.forEach((member: GuildMember) => {
-        if (member.user.bot) botCount++;
-      });
-
-      if (
-        members.size > this.minimumGuildMembersForFarmCheck &&
-        (botCount * 100) / members.size >= this.maximumGuildBotsPercentage
-      ) {
-        guild.leave().then(noop, this.onError('guild.leave'));
-        this.log(`Server "${guild.name}" has been marked as potential bot farm`);
+    const members = this.getMembers(guild);
+    if (
+      this.minimumGuildMembersForFarmCheck &&
+      this.maximumGuildBotsPercentage &&
+      members &&
+      members.size > this.minimumGuildMembersForFarmCheck
+    ) {
+      const botCount = members.reduce((botCount, member) => botCount + (member.user.bot ? 1 : 0), 0);
+      if ((botCount * 100) / members.size >= this.maximumGuildBotsPercentage) {
+        from(guild.leave())
+          .pipe(
+            tap(() => this.log(`Server "${guild.name}" has been identified as a potential bot farm`)),
+            catchError(error => of(this.onError(error, 'guild.leave'))),
+          )
+          .subscribe();
       }
     }
   }
 
-  private onError(functionName: string, parameters?: Array<string | number | boolean | undefined>) {
-    return (error: Error | string) => {
-      let errorMessage: string = `${error} thrown`;
-      if (functionName) errorMessage += ` when calling ${functionName}`;
-      if (parameters) errorMessage += ` with parameters: ${parameters.join(', ')}`;
-      this.error(`${errorMessage}.`);
-    };
+  private onError(error: Error | string, functionName?: string, parameters?: Array<any>) {
+    let errorMessage: string = `"${error}" thrown`;
+    if (functionName) {
+      errorMessage += ` when calling ${functionName}`;
+    }
+    if (parameters) {
+      errorMessage += ` with parameters: ${parameters.map(parameter => JSON.stringify(parameter)).join(', ')}`;
+    }
+    this.error(`${errorMessage}.`);
   }
 
   private log(message: string) {
-    this.logger.info(message);
+    this.logger.info(`DiscordBot: ${message}`);
   }
 
   private error(error: Error | string) {
-    this.logger.error(error);
+    this.logger.error(`DiscordBot: ${error}`);
   }
 
   /* public */
 
-  public onWrongParameterCount(message: Message) {
-    this.sendMessage(message, `Invalid parameter count.`);
+  public getClient() {
+    return this.client;
+  }
+
+  public getUser() {
+    return this.client.user;
+  }
+
+  public getGuilds() {
+    return this.client.guilds.cache;
+  }
+
+  public getMembers(guild: Guild) {
+    return guild.members.cache;
   }
 
   public sendMessage(message: Message, messageContent: StringResolvable, messageOptions?: MessageOptions) {
-    if (message.guild) {
-      if (message.guild.me?.permissions.has('SEND_MESSAGES')) {
-        message.channel.send(messageContent, messageOptions).then(noop, error => {
-          this.onError(error, ['message.channel.send', messageContent, JSON.stringify(messageOptions)]);
-        });
-      } else {
-        message.author.send(
-          `I don't have the permission to send messages on the server "${message.guild.name}". Please, contact the server admin to have this permission added.`,
-        );
-      }
+    if (!message.guild) return throwError('Guild is unset');
+
+    if (!message.guild.me?.permissions.has('SEND_MESSAGES')) {
+      from(message.author.send(`I do not have permission to send messages on the server "${message.guild.name}".`))
+        .pipe(
+          catchError(error => {
+            return of(this.onError(error, 'message.author.send', [message, messageContent, messageOptions]));
+          }),
+        )
+        .subscribe();
     }
+
+    from(message.channel.send(messageContent, messageOptions))
+      .pipe(
+        catchError(error => {
+          return of(this.onError(error, 'message.channel.send', [message, messageContent, messageOptions]));
+        }),
+      )
+      .subscribe();
   }
 
   public sendError(message: Message, error: Error | string) {
@@ -165,5 +191,22 @@ export class DiscordBot {
         color: 15158332,
       },
     });
+  }
+
+  public setActivityMessage(activityMessage: string, activityOptions?: ActivityOptions) {
+    return (this.client.user
+      ? from(this.client.user.setActivity(activityMessage, activityOptions))
+      : throwError('Client is missing')
+    )
+      .pipe(
+        catchError(error =>
+          of(this.onError(error, 'this.client.user.setActivity', [activityMessage, activityOptions])),
+        ),
+      )
+      .subscribe();
+  }
+
+  public onWrongParameterCount(message: Message) {
+    this.sendMessage(message, `Invalid parameter count.`);
   }
 }
