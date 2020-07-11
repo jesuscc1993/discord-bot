@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.execute = exports.lineContainsPrefix = exports.messageContainsPrefix = exports.getParametersFromLine = void 0;
 /**
  * Extract parameters from line.
  * @param line Line without prefix nor command.
