@@ -10,7 +10,7 @@
     "typescript": "^3.9.6"
   },
   "engines": {
-    "node": "12.15.0",
+    "node": "12.18.3",
     "yarn": "1.16.0"
   },
   "license": "CC-BY-NC-SA-4.0",
