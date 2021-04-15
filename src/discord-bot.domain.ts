@@ -21,7 +21,7 @@ export const messageContainsPrefix = (message: string, prefix: string): boolean 
  * @param prefix Prefic to check for.
  */
 export const lineContainsPrefix = (line: string, prefix: string): boolean => {
-  return line.indexOf(prefix) === 0 && line.substring(prefix.length + 1).charAt(0) !== ' ';
+  return line.indexOf(prefix) === 0 && line.substring(prefix.length).charAt(0) !== ' ';
 };
 
 /**
