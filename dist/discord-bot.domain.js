@@ -22,7 +22,7 @@ exports.messageContainsPrefix = function (message, prefix) {
  * @param prefix Prefic to check for.
  */
 exports.lineContainsPrefix = function (line, prefix) {
-    return line.indexOf(prefix) === 0 && line.substring(prefix.length + 1).charAt(0) !== ' ';
+    return line.indexOf(prefix) === 0 && line.substring(prefix.length).charAt(0) !== ' ';
 };
 /**
  * Executes the method passed, if set and of type function, with the passed params as arguments.
