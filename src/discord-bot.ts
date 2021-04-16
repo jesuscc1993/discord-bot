@@ -2,13 +2,12 @@ import Discord, {
   ActivityOptions,
   Client,
   Guild,
-  GuildMember,
   Message,
   MessageOptions,
   StringResolvable,
   TextChannel,
 } from 'discord.js';
-import { from, noop, of, throwError } from 'rxjs';
+import { from, of, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
 import {
@@ -39,26 +38,26 @@ export class DiscordBot {
 
     this.client = new Discord.Client();
 
-    this.client.on('error', error => this.onError(error));
+    this.client.on('error', (error) => this.onError(error));
 
     this.client.on('ready', () => {
       execute(this.onLoad);
       this.leaveGuildsSuspectedAsBotFarms();
     });
 
-    this.client.on('guildCreate', guild => {
+    this.client.on('guildCreate', (guild) => {
       this.log(`Joined guild "${guild.name}"`);
       this.onGuildUpdate(guild);
       execute(this.onGuildJoined, guild);
     });
-    this.client.on('guildMemberAdd', member => member.guild && this.onGuildUpdate(member.guild));
-    this.client.on('guildMemberRemove', member => member.guild && this.onGuildUpdate(member.guild));
-    this.client.on('guildDelete', guild => {
+    this.client.on('guildMemberAdd', (member) => member.guild && this.onGuildUpdate(member.guild));
+    this.client.on('guildMemberRemove', (member) => member.guild && this.onGuildUpdate(member.guild));
+    this.client.on('guildDelete', (guild) => {
       this.log(`Left guild "${guild.name}"`);
       execute(this.onGuildLeft, guild);
     });
 
-    this.client.on('message', message => {
+    this.client.on('message', (message) => {
       if (message.author?.bot || !message.content) return;
 
       if (
@@ -93,7 +92,7 @@ export class DiscordBot {
     });
 
     from(this.client.login(this.botAuthToken))
-      .pipe(catchError(error => of(this.onError(error, 'client.login'))))
+      .pipe(catchError((error) => of(this.onError(error, 'client.login'))))
       .subscribe();
   }
 
@@ -102,7 +101,7 @@ export class DiscordBot {
   }
 
   private leaveGuildsSuspectedAsBotFarms() {
-    this.getGuilds().forEach(guild => this.leaveGuildWhenSuspectedAsBotFarm(guild));
+    this.getGuilds().forEach((guild) => this.leaveGuildWhenSuspectedAsBotFarm(guild));
   }
 
   private leaveGuildWhenSuspectedAsBotFarm(guild: Guild) {
@@ -118,7 +117,7 @@ export class DiscordBot {
         from(guild.leave())
           .pipe(
             tap(() => this.log(`Server "${guild.name}" has been identified as a potential bot farm`)),
-            catchError(error => of(this.onError(error, 'guild.leave'))),
+            catchError((error) => of(this.onError(error, 'guild.leave'))),
           )
           .subscribe();
       }
@@ -131,7 +130,7 @@ export class DiscordBot {
       errorMessage += ` when calling ${functionName}`;
     }
     if (parameters) {
-      errorMessage += ` with parameters: ${parameters.map(parameter => JSON.stringify(parameter)).join(', ')}`;
+      errorMessage += ` with parameters: ${parameters.map((parameter) => JSON.stringify(parameter)).join(', ')}`;
     }
     this.error(`${errorMessage}.`);
   }
@@ -163,14 +162,14 @@ export class DiscordBot {
   }
 
   public sendMessage(message: Message, messageContent: StringResolvable, messageOptions?: MessageOptions) {
-    const { guild, channel } = message;
+    const { author, channel, guild } = message;
 
     if (guild && guild.me) {
       if (!guild.me.permissions.has('SEND_MESSAGES')) {
         const errorContent = `I do not have permission to send messages on server "${guild.name}".`;
-        return from(message.author.send(errorContent))
+        return from(author.send(errorContent))
           .pipe(
-            catchError(error => {
+            catchError((error) => {
               return of(this.onError(error, 'message.author.send', [errorContent]));
             }),
           )
@@ -183,9 +182,9 @@ export class DiscordBot {
         !(<TextChannel>channel).permissionsFor(guild.me)?.has('SEND_MESSAGES')
       ) {
         const errorContent = `I do not have permission to send messages on the "${channel.name}" channel on server "${guild.name}".`;
-        return from(message.author.send(errorContent))
+        return from(author.send(errorContent))
           .pipe(
-            catchError(error => {
+            catchError((error) => {
               return of(this.onError(error, 'message.author.send', [errorContent]));
             }),
           )
@@ -193,9 +192,9 @@ export class DiscordBot {
       }
     }
 
-    return from(message.channel.send(messageContent, messageOptions))
+    return from(messageOptions ? channel.send(messageContent, messageOptions) : channel.send(messageContent))
       .pipe(
-        catchError(error => {
+        catchError((error) => {
           return of(this.onError(error, 'message.channel.send', [messageContent, messageOptions]));
         }),
       )
@@ -218,7 +217,7 @@ export class DiscordBot {
       : throwError('Client is missing')
     )
       .pipe(
-        catchError(error =>
+        catchError((error) =>
           of(this.onError(error, 'this.client.user.setActivity', [activityMessage, activityOptions])),
         ),
       )
