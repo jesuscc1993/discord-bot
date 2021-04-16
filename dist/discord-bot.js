@@ -119,11 +119,11 @@ var DiscordBot = /** @class */ (function () {
     DiscordBot.prototype.sendMessage = function (message, messageContent, messageOptions) {
         var _this = this;
         var _a;
-        var guild = message.guild, channel = message.channel;
+        var author = message.author, channel = message.channel, guild = message.guild;
         if (guild && guild.me) {
             if (!guild.me.permissions.has('SEND_MESSAGES')) {
                 var errorContent_1 = "I do not have permission to send messages on server \"" + guild.name + "\".";
-                return rxjs_1.from(message.author.send(errorContent_1))
+                return rxjs_1.from(author.send(errorContent_1))
                     .pipe(operators_1.catchError(function (error) {
                     return rxjs_1.of(_this.onError(error, 'message.author.send', [errorContent_1]));
                 }))
@@ -133,14 +133,14 @@ var DiscordBot = /** @class */ (function () {
                 channel.type === 'text' &&
                 !((_a = channel.permissionsFor(guild.me)) === null || _a === void 0 ? void 0 : _a.has('SEND_MESSAGES'))) {
                 var errorContent_2 = "I do not have permission to send messages on the \"" + channel.name + "\" channel on server \"" + guild.name + "\".";
-                return rxjs_1.from(message.author.send(errorContent_2))
+                return rxjs_1.from(author.send(errorContent_2))
                     .pipe(operators_1.catchError(function (error) {
                     return rxjs_1.of(_this.onError(error, 'message.author.send', [errorContent_2]));
                 }))
                     .subscribe();
             }
         }
-        return rxjs_1.from(message.channel.send(messageContent, messageOptions))
+        return rxjs_1.from(messageOptions ? channel.send(messageContent, messageOptions) : channel.send(messageContent))
             .pipe(operators_1.catchError(function (error) {
             return rxjs_1.of(_this.onError(error, 'message.channel.send', [messageContent, messageOptions]));
         }))
