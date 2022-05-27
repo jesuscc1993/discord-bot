@@ -1,4 +1,4 @@
-import { Guild, Message } from 'discord.js';
+import { ClientOptions, Guild, Message } from 'discord.js';
 
 export type DiscordBotLogger = {
   error: (error: Error | string) => void;
@@ -23,6 +23,7 @@ export type DiscordBotSettings = {
   botCommands: { [name: string]: DiscordBotCommand };
   botPrefix: string;
   botPrefixDefault?: string;
+  clientOptions: ClientOptions;
   logger: DiscordBotLogger;
   maximumGuildBotsPercentage?: number;
   minimumGuildMembersForFarmCheck?: number;

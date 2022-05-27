@@ -1,20 +1,11 @@
 import Discord, {
-  ActivityOptions,
-  Client,
-  Guild,
-  Message,
-  MessageOptions,
-  StringResolvable,
-  TextChannel,
+  ActivityOptions, Client, Guild, Message, MessageOptions, TextChannel,
 } from 'discord.js';
-import { from, of, throwError } from 'rxjs';
+import { from, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
 import {
-  execute,
-  getParametersFromLine,
-  lineContainsPrefix,
-  messageContainsPrefix,
+  execute, getParametersFromLine, lineContainsPrefix, messageContainsPrefix,
 } from './discord-bot.domain';
 import { DiscordBotSettings } from './discord-bot.types';
 
@@ -36,7 +27,7 @@ export class DiscordBot {
   constructor(discordBotSettings: DiscordBotSettings) {
     Object.assign(this, discordBotSettings);
 
-    this.client = new Discord.Client();
+    this.client = new Discord.Client(discordBotSettings.clientOptions);
 
     this.client.on('error', (error) => this.onError(error));
 
@@ -161,7 +152,7 @@ export class DiscordBot {
     return guild.members.cache;
   }
 
-  public sendMessage(message: Message, messageContent: StringResolvable, messageOptions?: MessageOptions) {
+  public sendMessage(message: Message, messageContent?: string, messageOptions?: MessageOptions) {
     const { author, channel, guild } = message;
 
     if (guild && guild.me) {
@@ -176,12 +167,10 @@ export class DiscordBot {
           .subscribe();
       }
 
-      if (
-        guild.me &&
-        channel.type === 'text' &&
-        !(<TextChannel>channel).permissionsFor(guild.me)?.has('SEND_MESSAGES')
-      ) {
-        const errorContent = `I do not have permission to send messages on the "${channel.name}" channel on server "${guild.name}".`;
+      const textChannel = channel as TextChannel;
+
+      if (guild.me && channel.isText() && !textChannel.permissionsFor(guild.me)?.has('SEND_MESSAGES')) {
+        const errorContent = `I do not have permission to send messages on the "${textChannel.name}" channel on server "${guild.name}".`;
         return from(author.send(errorContent))
           .pipe(
             catchError((error) => {
@@ -192,7 +181,7 @@ export class DiscordBot {
       }
     }
 
-    return from(messageOptions ? channel.send(messageContent, messageOptions) : channel.send(messageContent))
+    return from(channel.send({ ...messageOptions, content: messageContent }))
       .pipe(
         catchError((error) => {
           return of(this.onError(error, 'message.channel.send', [messageContent, messageOptions]));
@@ -204,24 +193,23 @@ export class DiscordBot {
   public sendError(message: Message, error: Error | string) {
     const errorMessage = (<Error>error).message || <string>error;
     this.sendMessage(message, undefined, {
-      embed: {
-        description: `**Error:** ${errorMessage || 'My apologies. I had some trouble processing your request.'}`,
-        color: 15158332,
-      },
+      embeds: [
+        {
+          description: `**Error:** ${errorMessage || 'My apologies. I had some trouble processing your request.'}`,
+          color: 15158332,
+        },
+      ],
     });
   }
 
   public setActivityMessage(activityMessage: string, activityOptions?: ActivityOptions) {
-    return (this.client.user
-      ? from(this.client.user.setActivity(activityMessage, activityOptions))
-      : throwError('Client is missing')
-    )
-      .pipe(
-        catchError((error) =>
-          of(this.onError(error, 'this.client.user.setActivity', [activityMessage, activityOptions])),
-        ),
-      )
-      .subscribe();
+    if (this.client.user) {
+      try {
+        this.client.user.setActivity(activityMessage, activityOptions);
+      } catch (error) {
+        this.onError(error as Error, 'this.client.user.setActivity', [activityMessage, activityOptions]);
+      }
+    }
   }
 
   public onWrongParameterCount(message: Message) {
