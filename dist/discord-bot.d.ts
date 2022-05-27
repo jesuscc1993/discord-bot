@@ -1,4 +1,4 @@
-import Discord, { ActivityOptions, Guild, Message, MessageOptions, StringResolvable } from 'discord.js';
+import Discord, { ActivityOptions, Guild, Message, MessageOptions } from 'discord.js';
 import { DiscordBotSettings } from './discord-bot.types';
 export declare class DiscordBot {
     readonly botAuthToken: DiscordBotSettings['botAuthToken'];
@@ -20,12 +20,12 @@ export declare class DiscordBot {
     private onError;
     private log;
     private error;
-    getClient(): Discord.Client;
+    getClient(): Discord.Client<boolean>;
     getUser(): Discord.ClientUser | null;
     getGuilds(): Discord.Collection<string, Discord.Guild>;
     getMembers(guild: Guild): Discord.Collection<string, Discord.GuildMember>;
-    sendMessage(message: Message, messageContent: StringResolvable, messageOptions?: MessageOptions): import("rxjs").Subscription;
+    sendMessage(message: Message, messageContent?: string, messageOptions?: MessageOptions): import("rxjs").Subscription;
     sendError(message: Message, error: Error | string): void;
-    setActivityMessage(activityMessage: string, activityOptions?: ActivityOptions): import("rxjs").Subscription;
+    setActivityMessage(activityMessage: string, activityOptions?: ActivityOptions): void;
     onWrongParameterCount(message: Message): void;
 }
